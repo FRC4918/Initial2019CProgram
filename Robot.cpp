@@ -31,7 +31,7 @@ class Robot : public frc::IterativeRobot {
          m_motorLSSlave2.Follow(m_motorLSMaster);
          m_motorRSSlave1.Follow(m_motorRSMaster);
          m_motorRSSlave2.Follow(m_motorRSMaster);
-         m_compressor.SetClosedLoopControl(true); // turn compresser off
+         m_compressor.SetClosedLoopControl(true); // turn compresser on
          m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward);
          m_motorArmMaster.ConfigNominalOutputForward(0, 10);
          m_motorArmMaster.ConfigNominalOutputReverse(0, 10);
@@ -71,9 +71,9 @@ class Robot : public frc::IterativeRobot {
          m_motorArmMaster.ConfigSelectedFeedbackSensor( FeedbackDevice::CTRE_MagEncoder_Relative,
                                                         0, 0 );
          m_motorArmMaster.SetSensorPhase( true );
-         m_motorArmMaster.Config_kF( 0, 0.400, 0 );
+         m_motorArmMaster.Config_kF( 0, 0.45600, 0 );
          m_motorArmMaster.Config_kP( 0, 0.6, 0 );
-         m_motorArmMaster.Config_kI( 0, 0.0, 0 );
+         m_motorArmMaster.Config_kI( 0, 0.006, 0 );
          m_motorArmMaster.Config_kD( 0, 0.6, 0 );
       }
 
@@ -94,13 +94,13 @@ class Robot : public frc::IterativeRobot {
                                        m_stick.GetTop() );m_compressor.SetClosedLoopControl(false);
             }
          }
-          m_compressor.SetClosedLoopControl(true); // turn compressor off
+          m_compressor.SetClosedLoopControl(true); // turn compressor on
           // Compressor *c = new Compressor(0);
           // m_doublesolenoid.Set(DoubleSolenoid.Value.kOff);
           if ( m_stick.GetTrigger() ) {
-             m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kReverse);
+             m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kReverse); // high gear
           } else {
-             m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward);
+             m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward); // low gear
           }
           // m_doublesolenoid.Set(DoubleSolenoid::Value::kReverse);
           if ( !m_stick.GetRawButton(4) ) {
@@ -109,7 +109,7 @@ class Robot : public frc::IterativeRobot {
                * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
                * velocity setpoint is in units/100ms
                */
-              double targetVelocity_UnitsPer100ms = m_stick.GetZ() * 4096 * 500.0 / 600;
+              double targetVelocity_UnitsPer100ms = m_stick.GetZ() * 2240;
               /* 1500 RPM in either direction */
               if ( m_stick.GetRawButton(5) ) {
                  std::cout << "button5 " << std::endl;
@@ -119,7 +119,10 @@ class Robot : public frc::IterativeRobot {
                  m_motorArmMaster.Set( ControlMode::Velocity, 1000 );
               } else {
                 m_motorArmMaster.Set( ControlMode::Velocity, targetVelocity_UnitsPer100ms);
+                std::cout << "Velocity " << targetVelocity_UnitsPer100ms << "/" << m_motorArmMaster.GetSelectedSensorVelocity(0);
+                std::cout << " ( "   << m_motorArmMaster.GetSelectedSensorVelocity(0) - targetVelocity_UnitsPer100ms << " )" << std::endl;
               }
+
           } else {
               m_motorArmMaster.Set(ControlMode::PercentOutput, m_stick.GetZ());
           }
