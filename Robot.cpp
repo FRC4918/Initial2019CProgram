@@ -27,7 +27,16 @@ class Robot : public frc::IterativeRobot {
    public:
       void AutonomousInit() override {
          iAutoCount = 0;
+         m_motorLSSlave1.Follow(m_motorLSMaster);
+         m_motorLSSlave2.Follow(m_motorLSMaster);
+         m_motorRSSlave1.Follow(m_motorRSMaster);
+         m_motorRSSlave2.Follow(m_motorRSMaster);
+         m_compressor.SetClosedLoopControl(true); // turn compresser off
          m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward);
+         m_motorArmMaster.ConfigNominalOutputForward(0, 10);
+         m_motorArmMaster.ConfigNominalOutputReverse(0, 10);
+         m_motorArmMaster.ConfigPeakOutputForward(1, 10);
+         m_motorArmMaster.ConfigPeakOutputReverse(-1,10);
       }
 
       void AutonomousPeriodic() override {
@@ -37,8 +46,10 @@ class Robot : public frc::IterativeRobot {
            m_drive.CurvatureDrive( 0.5, 0.5, 0 );
          } else if ( iAutoCount < 201 ) {
            m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kReverse);
-         } else if ( iAutoCount < 700 ) {
+         } else if ( iAutoCount < 600 ) {
            m_drive.CurvatureDrive( 0.5, -0.5, 0 );
+         } else if ( iAutoCount < 700 ) {
+           m_drive.CurvatureDrive( 0.5, 0.5, 0 );
       // } else if ( iAutoCount < 700 ) {
       //   m_drive.CurvatureDrive( 0.5, 0.5, 0 );                                       }
          } else {
@@ -53,6 +64,17 @@ class Robot : public frc::IterativeRobot {
          m_motorRSSlave1.Follow(m_motorRSMaster);
          m_motorRSSlave2.Follow(m_motorRSMaster);
          m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward);
+         m_motorArmMaster.ConfigNominalOutputForward(0, 10);
+         m_motorArmMaster.ConfigNominalOutputReverse(0, 10);
+         m_motorArmMaster.ConfigPeakOutputForward(1, 10);
+         m_motorArmMaster.ConfigPeakOutputReverse(-1,10);
+         m_motorArmMaster.ConfigSelectedFeedbackSensor( FeedbackDevice::CTRE_MagEncoder_Relative,
+                                                        0, 0 );
+         m_motorArmMaster.SetSensorPhase( true );
+         m_motorArmMaster.Config_kF( 0, 0.400, 0 );
+         m_motorArmMaster.Config_kP( 0, 0.6, 0 );
+         m_motorArmMaster.Config_kI( 0, 0.0, 0 );
+         m_motorArmMaster.Config_kD( 0, 0.6, 0 );
       }
 
       void TeleopPeriodic() override {
@@ -69,10 +91,10 @@ class Robot : public frc::IterativeRobot {
             } else {
                m_drive.CurvatureDrive( m_stick.GetY(),
                                        -powl( fabs(m_stick.GetX()), m_stick.GetThrottle()+2.0 ),
-                                       m_stick.GetTop() );
+                                       m_stick.GetTop() );m_compressor.SetClosedLoopControl(false);
             }
          }
-          m_compressor.SetClosedLoopControl(true);
+          m_compressor.SetClosedLoopControl(true); // turn compressor off
           // Compressor *c = new Compressor(0);
           // m_doublesolenoid.Set(DoubleSolenoid.Value.kOff);
           if ( m_stick.GetTrigger() ) {
@@ -81,13 +103,35 @@ class Robot : public frc::IterativeRobot {
              m_doublesolenoid.Set(frc::DoubleSolenoid::Value::kForward);
           }
           // m_doublesolenoid.Set(DoubleSolenoid::Value::kReverse);
+          if ( !m_stick.GetRawButton(4) ) {
+              /* Speed mode */
+              /*
+               * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
+               * velocity setpoint is in units/100ms
+               */
+              double targetVelocity_UnitsPer100ms = m_stick.GetZ() * 4096 * 500.0 / 600;
+              /* 1500 RPM in either direction */
+              if ( m_stick.GetRawButton(5) ) {
+                 std::cout << "button5 " << std::endl;
+                 m_motorArmMaster.Set( ControlMode::Velocity, -1000 );
+              } else if ( m_stick.GetRawButton(6) ) {
+                 std::cout << "button6 " << std::endl;
+                 m_motorArmMaster.Set( ControlMode::Velocity, 1000 );
+              } else {
+                m_motorArmMaster.Set( ControlMode::Velocity, targetVelocity_UnitsPer100ms);
+              }
+          } else {
+              m_motorArmMaster.Set(ControlMode::PercentOutput, m_stick.GetZ());
+          }
       }
 
    private:
       frc::Joystick m_stick{0};
       // jagorigwas: frc::Spark m_motor{0};
-      WPI_TalonSRX m_motorRSMaster{1};
-      WPI_TalonSRX m_motorLSMaster{2};
+      WPI_TalonSRX m_motorRSMaster{1}; // Right side drive motor
+      WPI_TalonSRX m_motorLSMaster{2}; // Left  side drive motor
+      WPI_TalonSRX m_motorArmMaster{7}; // Arm motor
+
       WPI_VictorSPX m_motorRSSlave1{3};
       WPI_VictorSPX m_motorLSSlave1{4};
       WPI_VictorSPX m_motorLSSlave2{5};
