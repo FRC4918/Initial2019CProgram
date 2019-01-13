@@ -154,13 +154,17 @@ class Robot : public frc::TimedRobot {
                // cout << "button5 " << endl;
                // exactly 146 RPM to the left (-1000 ticks/100ms)
                targetVelocity_UnitsPer100ms = -1000;
+               IntakeMotors.Set(-0.5);
+
             } else if ( m_stick.GetRawButton(6) ) {
                // cout << "button6 " << endl;
                // exactly 146 RPM to the right (1000 ticks/100ms)
                targetVelocity_UnitsPer100ms = 1000.0;
+               IntakeMotors.Set(0.5);
             } else {
                      /* up to 328 RPM (2240 ticks/100ms) in either direction */
                targetVelocity_UnitsPer100ms = m_stick.GetZ() * 4096 * 328.0 / 600;
+               IntakeMotors.Set(0);
             }
             if (limev == 1){
                if (limex >= 0.0){
@@ -233,6 +237,7 @@ class Robot : public frc::TimedRobot {
       frc::Compressor m_compressor{0};
       frc::DoubleSolenoid m_doublesolenoid{0,1};
       frc::AnalogInput DistSensor1{0};
+      frc::Spark IntakeMotors{0};
       std::shared_ptr<NetworkTable> limenttable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
 };
 
